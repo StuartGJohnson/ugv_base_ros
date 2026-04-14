@@ -132,7 +132,7 @@ int lastEncoderB = 0;
 double speedGetA;
 double speedGetB;
 
-double plusesRate = 3.14159265359 * WHEEL_D / ONE_CIRCLE_PLUSES;
+double pulsesRate = 3.14159265359 * WHEEL_D / ONE_CIRCLE_PLUSES;
 
 
 void initEncoders() {
@@ -143,29 +143,38 @@ void initEncoders() {
 }
 
 void getLeftSpeed() {
+  // gate updates on the imu
+  if (!imu_updated) return;
   unsigned long currentTime = micros();
   long encoderPulsesA = encoderA.getCount();
   if (!SET_MOTOR_DIR) {
-    speedGetA = (plusesRate * (encoderPulsesA - lastEncoderA)) / ((double)(currentTime - lastLeftSpdTime) / 1000000);
-    en_odom_l = ((float)encoderPulsesA / ONE_CIRCLE_PLUSES) * WHEEL_D * 3.14159265359;
+    speedGetA = (pulsesRate * (encoderPulsesA - lastEncoderA)) / ((double)(currentTime - lastLeftSpdTime) / 1000000);
+    //en_odom_l = ((float)encoderPulsesA / ONE_CIRCLE_PLUSES) * WHEEL_D * 3.14159265359;
+    en_odom_l = encoderPulsesA;
   } else {
-    speedGetA = (plusesRate * (lastEncoderA - encoderPulsesA)) / ((double)(currentTime - lastLeftSpdTime) / 1000000);
-    en_odom_l = - ((float)encoderPulsesA / ONE_CIRCLE_PLUSES) * WHEEL_D * 3.14159265359;
+    speedGetA = (pulsesRate * (lastEncoderA - encoderPulsesA)) / ((double)(currentTime - lastLeftSpdTime) / 1000000);
+    //en_odom_l = - ((float)encoderPulsesA / ONE_CIRCLE_PLUSES) * WHEEL_D * 3.14159265359;
+    en_odom_l = - encoderPulsesA;
   }
+  odom_l_updates += 1;
   lastEncoderA = encoderPulsesA;
   lastLeftSpdTime = currentTime;
 }
 
 void getRightSpeed() {
+  if (!imu_updated) return;
   unsigned long currentTime = micros();
   long encoderPulsesB = encoderB.getCount();
   if (!SET_MOTOR_DIR) {
-    speedGetB = (plusesRate * (encoderPulsesB - lastEncoderB)) / ((double)(currentTime - lastRightSpdTime) / 1000000);
-    en_odom_r = ((float)encoderPulsesB / ONE_CIRCLE_PLUSES) * WHEEL_D * 3.14159265359;
+    speedGetB = (pulsesRate * (encoderPulsesB - lastEncoderB)) / ((double)(currentTime - lastRightSpdTime) / 1000000);
+    // en_odom_r = ((float)encoderPulsesB / ONE_CIRCLE_PLUSES) * WHEEL_D * 3.14159265359;
+    en_odom_r = encoderPulsesB;
   } else {
-    speedGetB = (plusesRate * (lastEncoderB - encoderPulsesB)) / ((double)(currentTime - lastRightSpdTime) / 1000000);
-    en_odom_r = - ((float)encoderPulsesB / ONE_CIRCLE_PLUSES) * WHEEL_D * 3.14159265359;
+    speedGetB = (pulsesRate * (lastEncoderB - encoderPulsesB)) / ((double)(currentTime - lastRightSpdTime) / 1000000);
+    // en_odom_r = - ((float)encoderPulsesB / ONE_CIRCLE_PLUSES) * WHEEL_D * 3.14159265359;
+    en_odom_r = - encoderPulsesB;
   }
+  odom_r_updates += 1;
   lastEncoderB = encoderPulsesB;
   lastRightSpdTime = currentTime;
 }
@@ -198,12 +207,14 @@ void pidControllerInit() {
              setpointA);
   pidA.SetOutputLimits(-255, 255);
   pidA.SetMode(PID::Automatic);
+  pidA.SetSampleTime(30);
 
   pidB.Start(speedGetB,
              outputB,
              setpointB);
   pidB.SetOutputLimits(-255, 255);
   pidB.SetMode(PID::Automatic);
+  pidB.SetSampleTime(30);
 }
 
 void leftCtrl(float pwmInputA){
@@ -271,8 +282,10 @@ void setGoalSpeed(float inputLeft, float inputRight) {
     return;
   }
   
-  setpointA = inputLeft*spd_rate_A;
-  setpointB = inputRight*spd_rate_B;
+  //setpointA = inputLeft*spd_rate_A;
+  //setpointB = inputRight*spd_rate_B;
+  setpointA = inputLeft;
+  setpointB = inputRight;
 
   if (setpointA != setpointA_buffer) {
     pidA.Setpoint(setpointA);
@@ -286,6 +299,10 @@ void setGoalSpeed(float inputLeft, float inputRight) {
 }
 
 void LeftPidControllerCompute() {
+  // run pid updates at the same rate as
+  // data updates
+  if (!imu_updated) return;
+
   if (!usePIDCompute) {
     return;
   }
@@ -297,10 +314,30 @@ void LeftPidControllerCompute() {
   if (setpointA == 0 && speedGetA == 0) {
     outputA = 0;
   }
+
+  // enforce max slew rate
+  if (outputA > last_pwm_left + MAX_SLEW_PWM) {
+    outputA = last_pwm_left + MAX_SLEW_PWM;
+  } else if (outputA < last_pwm_left - MAX_SLEW_PWM) {
+    outputA = last_pwm_left - MAX_SLEW_PWM;
+  }
+
+  // prevent rapid switching of control direction
+  if (outputA * last_pwm_left < 0.0)
+  {
+    outputA = 0;
+  }
+
+  last_pwm_left = outputA;
+
   leftCtrl(outputA);
 }
 
 void RightPidControllerCompute() {
+  // run pid updates at the same rate as
+  // data updates
+  if (!imu_updated) return;
+
   if (!usePIDCompute) {
     return;
   }
@@ -312,6 +349,22 @@ void RightPidControllerCompute() {
   if (setpointB == 0 && speedGetB == 0) {
     outputB = 0;
   }
+
+  // enforce max slew rate
+  if (outputB > last_pwm_right + MAX_SLEW_PWM) {
+    outputB = last_pwm_right + MAX_SLEW_PWM;
+  } else if (outputB < last_pwm_right - MAX_SLEW_PWM) {
+    outputB = last_pwm_right - MAX_SLEW_PWM;
+  }
+
+  // prevent rapid switching of control direction
+  if (outputB * last_pwm_right  < 0.0)
+  {
+    outputB = 0;
+  }
+
+  last_pwm_right = outputB;
+
   rightCtrl(outputB);
 }
 
@@ -381,7 +434,7 @@ void mm_settings(byte inputMain, byte inputModule) {
     TRACK_WIDTH = 0.141;
     SET_MOTOR_DIR = true;
   }
-  plusesRate = 3.14159265359 * WHEEL_D / ONE_CIRCLE_PLUSES;
+  pulsesRate = 3.14159265359 * WHEEL_D / ONE_CIRCLE_PLUSES;
 
   if (mainType == 1) {
     screenLine_2 = "RaspRover";

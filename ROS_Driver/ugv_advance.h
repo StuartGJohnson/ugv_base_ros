@@ -373,18 +373,52 @@ void setBaseInfoFeedbackMode(bool inputCmd) {
 
 // baseInfoFeedback.
 void baseInfoFeedback() {
-	static unsigned long last_feedback_time;
-	if (millis() - last_feedback_time < feedbackFlowExtraDelay) {
+	static unsigned long feedback_time;
+	unsigned long current_time;
+	// synchronize with the imu update
+	if (!imu_updated) return;
+
+	// I will assume that the remote manager knows whether or
+	// not it wants to use the timestamps in the telemetry or
+	// not - in other words whether or not it is sending time
+	// sync signals.
+	//if (!timeSynced) return;
+
+	// if (millis() - last_feedback_time < feedbackFlowExtraDelay) {
+	// 	return;
+	// }
+	
+	feedback_time = millis();
+
+	// let's timestamp this feedback with the midpoint of
+	// the last 2 time stamps.
+
+	if (lastFeedbackTimeValid)
+	{
+		unsigned long delta_feedback = feedback_time - lastFeedbackTime;
+		// offset current feedback time by 1/2 the delta
+		current_time = lastFeedbackTime + delta_feedback / 2;
+		lastFeedbackTime = feedback_time;
+	}
+	else
+	{ 
+		// just record feedback time and get out of here
+		lastFeedbackTime = feedback_time;
+		lastFeedbackTimeValid = true;
 		return;
 	}
-	
-	last_feedback_time = millis();
+
+	double currentTimeSec =  (double)(current_time - lastTimeSyncTime) / 1000.0;
 
 	jsonInfoHttp.clear();
 	jsonInfoHttp["T"] = FEEDBACK_BASE_INFO;
 
+	jsonInfoHttp["tsec"] = currentTimeSec;
+
 	jsonInfoHttp["L"] = speedGetA;
 	jsonInfoHttp["R"] = speedGetB;
+	jsonInfoHttp["Lp"] = outputA;
+	jsonInfoHttp["Rp"] = outputB;
 
 	// jsonInfoHttp["r"] = icm_roll;
 	// jsonInfoHttp["p"] = icm_pitch;
@@ -407,11 +441,13 @@ void baseInfoFeedback() {
 	jsonInfoHttp["my"] = my;
 	jsonInfoHttp["mz"] = mz;
 
-	long int odl_cm = (en_odom_l * 100);
-	jsonInfoHttp["odl"] = odl_cm;
+	// long int odl_cm = (en_odom_l * 100);
+	// jsonInfoHttp["odl"] = odl_cm;
+	jsonInfoHttp["odl"] = en_odom_l;
 
-	long int odr_cm = (en_odom_r * 100);
-	jsonInfoHttp["odr"] = odr_cm;
+	// long int odr_cm = (en_odom_r * 100);
+	// jsonInfoHttp["odr"] = odr_cm;
+	jsonInfoHttp["odr"] = en_odom_r;
 
     int v_int = (int)(loadVoltage_V * 100);
 	jsonInfoHttp["v"] = v_int;

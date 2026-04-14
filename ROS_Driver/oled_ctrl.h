@@ -53,8 +53,37 @@ void oled_update() {
 // dev info update on oled.
 void oledInfoUpdate() {
   currentTimeMillis = millis();
-  if (currentTimeMillis - lastTimeMillis > 10000) {
+  updates += 1;
+  if (abs(last_pwm_left) > max_command_left){
+    max_command_left = abs(last_pwm_left);
+  }
+  if (abs(last_pwm_right) > max_command_right){
+    max_command_right = abs(last_pwm_right);
+  }
+
+  unsigned long dt_ms = currentTimeMillis - lastTimeMillis;
+  unsigned long update_count = updates;
+  float dt_s = dt_ms / 1000.0;
+  double reported_max_command_left;
+  double reported_max_command_right;
+  if (dt_s > 5.0) {
     inaDataUpdate();
+    a_rate = a_updates / dt_s;
+    a_updates = 0;
+    g_rate = g_updates / dt_s;
+    g_updates = 0;
+    m_rate = m_updates / dt_s;
+    m_updates = 0;
+    odom_l_rate = odom_l_updates / dt_s;
+    odom_l_updates = 0;
+    odom_r_rate = odom_r_updates / dt_s;
+    odom_r_updates = 0;
+    update_rate = updates / dt_s;
+    updates = 0;
+    reported_max_command_left = max_command_left;
+    reported_max_command_right = max_command_right;
+    max_command_left = 0;
+    max_command_right = 0;
     lastTimeMillis = currentTimeMillis;
   } else {
     return;
@@ -62,8 +91,20 @@ void oledInfoUpdate() {
   if (!screenDefaultMode) {
     return;
   }
-
-  screenLine_3 = "V:"+String(loadVoltage_V) + " s " +String(mainType) + String(moduleType);
+  //screenLine_0 = "l:" + String(odom_l_rate) + " r:" + String(odom_r_rate);
+  //screenLine_1 = "a:" + String(a_rate) + " g:" + String(g_rate);
+  // data/update rate and display rate
+  screenLine_0 = "dr:" + String(g_rate) + " dt:" + String(dt_s);
+  // max left and right PWM commands over the last interval
+  screenLine_1 = "lp:" + String(reported_max_command_left) + " rp:" + String(reported_max_command_right);
+  //screenLine_2 = "m:" + String(m_rate) + "dt:" + String(dt_s);
+  //screenLine_2 = "kp:" + String(int(round(__kp))) + "kd:" + String(int(round(__kd))) + "ki:" + String(int(round(__ki)));
+  // left and right encoder
+  screenLine_2 = "le:" + String(en_odom_l) + " re:" + String(en_odom_r);
+  //screenLine_2 = "w:" + String(WHEEL_D) + " o:" + String(ONE_CIRCLE_PLUSES);
+  //screenLine_3 = "uc:" + String(update_count) + "dt:" + String(dt_s);
+  screenLine_3= "VL:" + String(loadVoltage_V) + " s " + String(mainType) + String(moduleType);
+  //screenLine_3= "VL:" + String(loadVoltage_V) + " s " + String(mainType) + String(moduleType);
   oled_update();
 }
 

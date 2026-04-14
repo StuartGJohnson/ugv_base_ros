@@ -88,10 +88,31 @@ void changeEspNowMode(byte inputMode) {
 
 
 // callback when data is sent
-void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  char macStr[18];
-  snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
-           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+// void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+//   char macStr[18];
+//   snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
+//            mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+
+//   jsonInfoHttp.clear();
+//   jsonInfoHttp["T"] = CMD_ESP_NOW_SEND;
+//   jsonInfoHttp["mac"] = macStr;
+//   jsonInfoHttp["status"] = (status == ESP_NOW_SEND_SUCCESS ? 1 : 0);
+//   jsonInfoHttp["megs"] = (status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+
+//   String getInfoJsonString;
+//   serializeJson(jsonInfoHttp, getInfoJsonString);
+//   Serial.println(getInfoJsonString);
+// }
+
+// callback when data is sent (newer ESP32 Arduino core / IDF 5.5+)
+void OnDataSent(const esp_now_send_info_t *tx_info, esp_now_send_status_t status) {
+  const uint8_t *mac_addr = (tx_info && tx_info->des_addr) ? tx_info->des_addr : nullptr;
+
+  char macStr[18] = "??:??:??:??:??:??";
+  if (mac_addr) {
+    snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
+             mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+  }
 
   jsonInfoHttp.clear();
   jsonInfoHttp["T"] = CMD_ESP_NOW_SEND;

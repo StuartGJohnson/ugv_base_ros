@@ -6,6 +6,10 @@ void jsonCmdReceiveHandler(){
 												emergencyStopProcessing();
   											setGoalSpeed(0, 0);
 												break;
+	case CMD_TIME_SYNC:
+												lastTimeSyncTime = millis();
+												timeSynced = true;
+												break;
 	case CMD_SPEED_CTRL:	if (jsonCmdReceive.containsKey("T") &&
 														jsonCmdReceive.containsKey("L") &&
 														jsonCmdReceive.containsKey("R")){

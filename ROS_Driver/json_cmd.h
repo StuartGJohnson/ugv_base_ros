@@ -28,10 +28,8 @@
 // {"T":1005,"id":1,"status":1}
 #define CMD_BUS_SERVO_ERROR 1005
 
-
-
-
-
+// time sync signal
+#define CMD_TIME_SYNC 42
 
 // emergency stop.
 // {"T":0}
@@ -40,8 +38,6 @@
 // reset emergency flag.
 // {"T":999}
 #define CMD_RESET_EMERGENCY 999
-
-
 
 // ---===< EoAT type settings. >===---
 

@@ -50,6 +50,8 @@ bool steadyMode = false;
 // 1: [default] turn on base info feedback flow.
 bool baseFeedbackFlow = 1;
 
+bool useDMP = true;
+
 String thisMacStr;
 
 #define BASE_JOINT     1
@@ -259,7 +261,7 @@ const uint16_t MIN_PWM = MAX_PWM/4;
 #define BENCB 16        // Encoder B input     
 #define BENCA 27
 
-int freq = 100000;
+int freq = 15000;
 int channel_A = 5;
 int channel_B = 6;
 
@@ -312,15 +314,26 @@ String jsonFeedbackWeb = "";
 
 //  --- --- --- pid controller --- --- ---
 
-float __kp = 20.0;
-float __ki = 2000.0;
-float __kd = 0;
+float __kp = 40.0;
+float __ki = 1000.0;
+float __kd = 0.0;
 float windup_limits = 255;
+
+// for slew rate limits
+float last_pwm_left = 0;
+float last_pwm_right = 0;
 
 
 //  --- --- --- ugv base --- --- ---
 
 #define THRESHOLD_PWM 23
+
+#define PWM_MAX 255
+
+// max PWM change per motor command update
+// the TB6612 motor drivers are somewhat
+// delicate
+#define MAX_SLEW_PWM 25
 
 // mainType:01 RaspRover
 // #define WHEEL_D 0.0800
@@ -365,6 +378,17 @@ bool uartCmdEcho = 0;
 int HEART_BEAT_DELAY = 3000;
 unsigned long lastCmdRecvTime = millis();
 
+// time sync data
+unsigned long lastTimeSyncTime = 0;
+// note the ROS2 node driving the robot MUST
+// send a time sync before it begins motion
+// operations
+bool timeSynced = false;
+
+// we are still going to assign a timestamp based
+// on the average of (MCU) update times
+unsigned long lastFeedbackTime;
+bool lastFeedbackTimeValid = false;
 
 // --- --- --- ugv imu --- --- ---
 double icm_pitch = 0;
@@ -373,12 +397,30 @@ double icm_yaw = 0;
 
 float icm_temp;
 unsigned long last_imu_update = 0;
+bool imu_updated = false;
 
 double ax, ay, az;
+unsigned long a_updates = 0;
 double mx, my, mz;
+unsigned long m_updates = 0;
 double gx, gy, gz;
+unsigned long g_updates = 0;
 
-double en_odom_l, en_odom_r;
+//double en_odom_l, en_odom_r;
+long int en_odom_l, en_odom_r;
+unsigned long odom_l_updates = 0;
+unsigned long odom_r_updates = 0;
+unsigned long updates = 0;
+
+double max_command_left = 0.0;
+double max_command_right = 0.0;
+
+float a_rate;
+float g_rate;
+float m_rate;
+float odom_l_rate;
+float odom_r_rate;
+float update_rate;
 
 unsigned long imu_last_time = micros();
 
