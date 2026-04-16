@@ -25,8 +25,8 @@ void jsonCmdReceiveHandler(){
 	case CMD_PWM_INPUT:		usePIDCompute = false;
 												heartbeatStopFlag = false;
 												lastCmdRecvTime = millis();
-												leftCtrl(jsonCmdReceive["L"]);
-												rightCtrl(jsonCmdReceive["R"]);
+												motorCtrl(jsonCmdReceive["L"], AIN1, AIN2, PWMA);
+												motorCtrl(jsonCmdReceive["R"], BIN1, BIN2, PWMB);
 												break;
 	case CMD_ROS_CTRL:		rosCtrl(
 												jsonCmdReceive["X"],
@@ -37,6 +37,10 @@ void jsonCmdReceiveHandler(){
 												jsonCmdReceive["I"],
 												jsonCmdReceive["D"],
 												jsonCmdReceive["L"]);break;
+	case CMD_SET_MOTOR_FF:
+												setFF(
+												jsonCmdReceive["K"],
+												jsonCmdReceive["I"]);break;
 	case CMD_OLED_CTRL:		oledCtrl(
 												jsonCmdReceive["lineNum"],
 												jsonCmdReceive["Text"]);break;
@@ -65,7 +69,7 @@ void jsonCmdReceiveHandler(){
 												jsonCmdReceive["cy"],
 												jsonCmdReceive["cz"]);break;
 	case CMD_BASE_FEEDBACK:
-												baseInfoFeedback();break;
+												baseInfoFeedback(encoderLeft, encoderRight, motorsLeft, motorsRight);break;
 	case CMD_BASE_FEEDBACK_FLOW:
 												setBaseInfoFeedbackMode(
 												jsonCmdReceive["cmd"]);break;

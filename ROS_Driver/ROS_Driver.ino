@@ -287,7 +287,7 @@ void setup() {
 
   initEncoders();
 
-  pidControllerInit();
+  //pidControllerInit();
 
   screenLine_2 = String("MAC:") + macToString(thisDevMac);
   oled_update();
@@ -411,18 +411,36 @@ void loop() {
     runNewJsonCmd = false;
   }
 
-  getLeftSpeed();
+  if (imu_updated)
+  {
+    // dt will be garbage on the first call (see first pass exit below)
+    double dt = getEncoders(encoderLeft, encoderRight);
+    //double dt = getEncodersSim(pwm_left, pwm_right, encoderLeft, encoderRight);
+    if (first_pass)
+    {
+      // roll encoders and exit
+      encoderLeft.lastEncoder = encoderLeft.encoder;
+      encoderRight.lastEncoder = encoderRight.encoder;
+      first_pass = false;
+    } else {
+      // left speed measurement
+      getSpeed(dt, encoderLeft);
+      // right speed measurement
+      getSpeed(dt, encoderRight);
+      // compute pwm updates
+      pwm_left = controller(setpointA, encoderLeft.speed, dt, motorsLeft);
+      pwm_right = controller(setpointB, encoderRight.speed, dt, motorsRight);
+      // apply updates to the motors
+      motorCtrl(pwm_left, AIN1, AIN2, PWMA);
+      motorCtrl(pwm_right, BIN1, BIN2, PWMB);
+    }
 
-  LeftPidControllerCompute();
+  }
   
-  getRightSpeed();
-  
-  RightPidControllerCompute();
-  
-  oledInfoUpdate();
+  oledInfoUpdate(encoderLeft, encoderRight, motorsLeft, motorsRight);
 
   if (baseFeedbackFlow) {
-    baseInfoFeedback();
+    baseInfoFeedback(encoderLeft, encoderRight, motorsLeft, motorsRight);
   }
 
   heartBeatCtrl();

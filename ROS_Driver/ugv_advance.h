@@ -372,7 +372,12 @@ void setBaseInfoFeedbackMode(bool inputCmd) {
 
 
 // baseInfoFeedback.
-void baseInfoFeedback() {
+void baseInfoFeedback(
+	const encoderState encoderStateLeft,
+	const encoderState encoderStateRight,
+	const motorControllerState motorStateLeft,
+	const motorControllerState motorStateRight
+	) {
 	static unsigned long feedback_time;
 	unsigned long current_time;
 	// synchronize with the imu update
@@ -415,10 +420,10 @@ void baseInfoFeedback() {
 
 	jsonInfoHttp["tsec"] = currentTimeSec;
 
-	jsonInfoHttp["L"] = speedGetA;
-	jsonInfoHttp["R"] = speedGetB;
-	jsonInfoHttp["Lp"] = outputA;
-	jsonInfoHttp["Rp"] = outputB;
+	jsonInfoHttp["L"] = encoderStateLeft.speed;
+	jsonInfoHttp["R"] = encoderStateRight.speed;
+	jsonInfoHttp["Lp"] = motorStateLeft.lastPwm;
+	jsonInfoHttp["Rp"] = motorStateRight.lastPwm;
 
 	// jsonInfoHttp["r"] = icm_roll;
 	// jsonInfoHttp["p"] = icm_pitch;
@@ -443,11 +448,11 @@ void baseInfoFeedback() {
 
 	// long int odl_cm = (en_odom_l * 100);
 	// jsonInfoHttp["odl"] = odl_cm;
-	jsonInfoHttp["odl"] = en_odom_l;
+	jsonInfoHttp["odl"] = encoderLeft.en_odom;
 
 	// long int odr_cm = (en_odom_r * 100);
 	// jsonInfoHttp["odr"] = odr_cm;
-	jsonInfoHttp["odr"] = en_odom_r;
+	jsonInfoHttp["odr"] = encoderRight.en_odom;
 
     int v_int = (int)(loadVoltage_V * 100);
 	jsonInfoHttp["v"] = v_int;

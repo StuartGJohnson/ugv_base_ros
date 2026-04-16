@@ -312,23 +312,48 @@ unsigned long prev_time = 0;
 String jsonFeedbackWeb = "";
 
 
-//  --- --- --- pid controller --- --- ---
+//  --- --- --- pid/feed-forward controller --- --- ---
 
-float __kp = 40.0;
-float __ki = 1000.0;
+float __kp = 50.0;
+float __ki = 300.0;
 float __kd = 0.0;
 float windup_limits = 255;
 
-// for slew rate limits
-float last_pwm_left = 0;
-float last_pwm_right = 0;
+float k_ff = 175.0;
+float int_ff = 10.0;
 
+bool first_pass = true;
+unsigned long lastEncoderTime;
+double pwm_left;
+double pwm_right;
+
+struct encoderState {
+  double speed;
+  long encoder;
+  long lastEncoder;
+  unsigned long lastEncoderTime;
+  unsigned long odom_updates;
+  long int en_odom;
+};
+
+encoderState encoderLeft{0.0, 0, 0, 0, 0, 0};
+encoderState encoderRight{0.0, 0, 0, 0, 0, 0};
+
+struct motorControllerState {
+  double pwm;
+  double setpoint;
+  double integral;
+  double lastPwm;
+};
+
+motorControllerState motorsLeft{0, 0, 0, 0};
+motorControllerState motorsRight{0, 0, 0, 0};
 
 //  --- --- --- ugv base --- --- ---
 
 #define THRESHOLD_PWM 23
 
-#define PWM_MAX 255
+#define MAX_PWM 255
 
 // max PWM change per motor command update
 // the TB6612 motor drivers are somewhat
@@ -406,10 +431,6 @@ unsigned long m_updates = 0;
 double gx, gy, gz;
 unsigned long g_updates = 0;
 
-//double en_odom_l, en_odom_r;
-long int en_odom_l, en_odom_r;
-unsigned long odom_l_updates = 0;
-unsigned long odom_r_updates = 0;
 unsigned long updates = 0;
 
 double max_command_left = 0.0;

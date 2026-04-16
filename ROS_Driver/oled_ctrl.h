@@ -51,14 +51,17 @@ void oled_update() {
 }
 
 // dev info update on oled.
-void oledInfoUpdate() {
+void oledInfoUpdate(encoderState encoderStateLeft,
+	encoderState encoderStateRight,
+	const motorControllerState motorStateLeft,
+	const motorControllerState motorStateRight) {
   currentTimeMillis = millis();
   updates += 1;
-  if (abs(last_pwm_left) > max_command_left){
-    max_command_left = abs(last_pwm_left);
+  if (abs(motorStateLeft.lastPwm) > max_command_left){
+    max_command_left = abs(motorStateLeft.lastPwm);
   }
-  if (abs(last_pwm_right) > max_command_right){
-    max_command_right = abs(last_pwm_right);
+  if (abs(motorStateRight.lastPwm) > max_command_right){
+    max_command_right = abs(motorStateRight.lastPwm);
   }
 
   unsigned long dt_ms = currentTimeMillis - lastTimeMillis;
@@ -74,10 +77,10 @@ void oledInfoUpdate() {
     g_updates = 0;
     m_rate = m_updates / dt_s;
     m_updates = 0;
-    odom_l_rate = odom_l_updates / dt_s;
-    odom_l_updates = 0;
-    odom_r_rate = odom_r_updates / dt_s;
-    odom_r_updates = 0;
+    odom_l_rate = encoderStateLeft.odom_updates / dt_s;
+    encoderStateLeft.odom_updates = 0;
+    odom_r_rate = encoderStateRight.odom_updates / dt_s;
+    encoderStateRight.odom_updates = 0;
     update_rate = updates / dt_s;
     updates = 0;
     reported_max_command_left = max_command_left;
@@ -100,7 +103,7 @@ void oledInfoUpdate() {
   //screenLine_2 = "m:" + String(m_rate) + "dt:" + String(dt_s);
   //screenLine_2 = "kp:" + String(int(round(__kp))) + "kd:" + String(int(round(__kd))) + "ki:" + String(int(round(__ki)));
   // left and right encoder
-  screenLine_2 = "le:" + String(en_odom_l) + " re:" + String(en_odom_r);
+  screenLine_2 = "le:" + String(encoderStateLeft.en_odom) + " re:" + String(encoderStateRight.en_odom);
   //screenLine_2 = "w:" + String(WHEEL_D) + " o:" + String(ONE_CIRCLE_PLUSES);
   //screenLine_3 = "uc:" + String(update_count) + "dt:" + String(dt_s);
   screenLine_3= "VL:" + String(loadVoltage_V) + " s " + String(mainType) + String(moduleType);

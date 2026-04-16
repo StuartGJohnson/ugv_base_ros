@@ -89,6 +89,10 @@
 // {"T":222,"name":"boot","step":"{\"T\":2,\"P\":20,\"I\":2500,\"D\":0,\"L\":255}"}
 #define CMD_SET_MOTOR_PID	2
 
+// {"T":43,"K":180,"I":8}
+// MOTOR Feedforward control (speed (m/s) -> pwm)
+#define CMD_SET_MOTOR_FF 43
+
 // OLED INFO SET
 // {"T":3,"lineNum":0,"Text":"putYourTextHere"}
 #define CMD_OLED_CTRL	3

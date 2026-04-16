@@ -142,52 +142,52 @@ void initEncoders() {
   encoderB.setCount(0);
 }
 
-void getLeftSpeed() {
-  // gate updates on the imu
-  if (!imu_updated) return;
+double getEncoders(encoderState& encLeft, encoderState& encRight) {
   unsigned long currentTime = micros();
-  long encoderPulsesA = encoderA.getCount();
-  if (!SET_MOTOR_DIR) {
-    speedGetA = (pulsesRate * (encoderPulsesA - lastEncoderA)) / ((double)(currentTime - lastLeftSpdTime) / 1000000);
-    //en_odom_l = ((float)encoderPulsesA / ONE_CIRCLE_PLUSES) * WHEEL_D * 3.14159265359;
-    en_odom_l = encoderPulsesA;
-  } else {
-    speedGetA = (pulsesRate * (lastEncoderA - encoderPulsesA)) / ((double)(currentTime - lastLeftSpdTime) / 1000000);
-    //en_odom_l = - ((float)encoderPulsesA / ONE_CIRCLE_PLUSES) * WHEEL_D * 3.14159265359;
-    en_odom_l = - encoderPulsesA;
-  }
-  odom_l_updates += 1;
-  lastEncoderA = encoderPulsesA;
-  lastLeftSpdTime = currentTime;
+  // I am assuming these don't take very long
+  encLeft.encoder = encoderA.getCount();
+  encRight.encoder = encoderB.getCount();
+  double dt = (double)(currentTime - encLeft.lastEncoderTime) / 1000000;
+  encLeft.lastEncoderTime = currentTime;
+  encRight.lastEncoderTime = currentTime;
+  return dt;
 }
 
-void getRightSpeed() {
-  if (!imu_updated) return;
+double getEncodersSim(double pwm_left, double pwm_right, encoderState& encLeft, encoderState& encRight) {
   unsigned long currentTime = micros();
-  long encoderPulsesB = encoderB.getCount();
-  if (!SET_MOTOR_DIR) {
-    speedGetB = (pulsesRate * (encoderPulsesB - lastEncoderB)) / ((double)(currentTime - lastRightSpdTime) / 1000000);
-    // en_odom_r = ((float)encoderPulsesB / ONE_CIRCLE_PLUSES) * WHEEL_D * 3.14159265359;
-    en_odom_r = encoderPulsesB;
-  } else {
-    speedGetB = (pulsesRate * (lastEncoderB - encoderPulsesB)) / ((double)(currentTime - lastRightSpdTime) / 1000000);
-    // en_odom_r = - ((float)encoderPulsesB / ONE_CIRCLE_PLUSES) * WHEEL_D * 3.14159265359;
-    en_odom_r = - encoderPulsesB;
+  double sign_left = (pwm_left > 0.0f) - (pwm_left < 0.0f);
+  double sign_right = (pwm_right > 0.0f) - (pwm_right < 0.0f);
+  double speed_left = sign_left * (fabs(pwm_left) - int_ff)/k_ff;
+  double speed_right = sign_right * (fabs(pwm_right) - int_ff)/k_ff;
+  double dt = (double)(currentTime - encLeft.lastEncoderTime) / 1000000;
+  encLeft.encoder = speed_left * dt / pulsesRate + encLeft.lastEncoder;
+  encRight.encoder = speed_right * dt / pulsesRate + encRight.lastEncoder;
+  encLeft.lastEncoderTime = currentTime;
+  encRight.lastEncoderTime = currentTime;
+  return dt;
+}
+
+void getSpeed(
+  double dt,
+  encoderState& encoder
+) {
+  encoder.speed = (pulsesRate * (encoder.encoder - encoder.lastEncoder)) / dt;
+  encoder.en_odom = encoder.encoder;
+  if (SET_MOTOR_DIR) {
+    encoder.speed = -encoder.speed;
+    encoder.en_odom = -encoder.en_odom;
   }
-  odom_r_updates += 1;
-  lastEncoderB = encoderPulsesB;
-  lastRightSpdTime = currentTime;
+  encoder.odom_updates += 1;
+  encoder.lastEncoder = encoder.encoder;
 }
 
 
 
 // --- PID Controller ---
 
-PID_v2 pidA(__kp, __ki, __kd, PID::Direct);
-PID_v2 pidB(__kp, __ki, __kd, PID::Direct);
+// PID_v2 pidA(__kp, __ki, __kd, PID::Direct);
+// PID_v2 pidB(__kp, __ki, __kd, PID::Direct);
 
-double outputA = 0;
-double outputB = 0;
 double setpointA = 0;
 double setpointB = 0;
 
@@ -201,72 +201,29 @@ float setpointB_last;
 float change_offset = 0.005;
 bool new_setpoint_flag = false;
 
-void pidControllerInit() {
-  pidA.Start(speedGetA,
-             outputA,
-             setpointA);
-  pidA.SetOutputLimits(-255, 255);
-  pidA.SetMode(PID::Automatic);
-  pidA.SetSampleTime(30);
-
-  pidB.Start(speedGetB,
-             outputB,
-             setpointB);
-  pidB.SetOutputLimits(-255, 255);
-  pidB.SetMode(PID::Automatic);
-  pidB.SetSampleTime(30);
-}
-
-void leftCtrl(float pwmInputA){
-  int pwmIntA = round(pwmInputA);
+void motorCtrl(double pwm, uint8_t pin1, uint8_t pin2, uint8_t channel){
+  int pwmInt= round(pwm);
   if(SET_MOTOR_DIR){
-    if(pwmIntA < 0){
-      digitalWrite(AIN1, HIGH);
-      digitalWrite(AIN2, LOW);
-      ledcWrite(PWMA, abs(pwmIntA));
+    if(pwmInt < 0){
+      digitalWrite(pin1, HIGH);
+      digitalWrite(pin2, LOW);
+      ledcWrite(channel, abs(pwmInt));
     }
     else{
-      digitalWrite(AIN1, LOW);
-      digitalWrite(AIN2, HIGH);
-      ledcWrite(PWMA, abs(pwmIntA));
+      digitalWrite(pin1, LOW);
+      digitalWrite(pin2, HIGH);
+      ledcWrite(channel, abs(pwmInt));
     }
   }else{
-    if(pwmIntA < 0){
-      digitalWrite(AIN1, LOW);
-      digitalWrite(AIN2, HIGH);
-      ledcWrite(PWMA, abs(pwmIntA));
+    if(pwmInt < 0){
+      digitalWrite(pin1, LOW);
+      digitalWrite(pin2, HIGH);
+      ledcWrite(channel, abs(pwmInt));
     }
     else{
-      digitalWrite(AIN1, HIGH);
-      digitalWrite(AIN2, LOW);
-      ledcWrite(PWMA, abs(pwmIntA));
-    }
-  }
-}
-
-void rightCtrl(float pwmInputB){
-  int pwmIntB = round(pwmInputB);
-  if(SET_MOTOR_DIR){
-    if(pwmIntB < 0){
-      digitalWrite(BIN1, HIGH);
-      digitalWrite(BIN2, LOW);
-      ledcWrite(PWMB, abs(pwmIntB));
-    }
-    else{
-      digitalWrite(BIN1, LOW);
-      digitalWrite(BIN2, HIGH);
-      ledcWrite(PWMB, abs(pwmIntB));
-    }
-  }else{
-    if(pwmIntB < 0){
-      digitalWrite(BIN1, LOW);
-      digitalWrite(BIN2, HIGH);
-      ledcWrite(PWMB, abs(pwmIntB));
-    }
-    else{
-      digitalWrite(BIN1, HIGH);
-      digitalWrite(BIN2, LOW);
-      ledcWrite(PWMB, abs(pwmIntB));
+      digitalWrite(pin1, HIGH);
+      digitalWrite(pin2, LOW);
+      ledcWrite(channel, abs(pwmInt));
     }
   }
 }
@@ -282,99 +239,95 @@ void setGoalSpeed(float inputLeft, float inputRight) {
     return;
   }
   
-  //setpointA = inputLeft*spd_rate_A;
-  //setpointB = inputRight*spd_rate_B;
   setpointA = inputLeft;
   setpointB = inputRight;
-
-  if (setpointA != setpointA_buffer) {
-    pidA.Setpoint(setpointA);
-    setpointA_buffer = inputLeft;
-  }
-  
-  if (setpointB != setpointB_buffer) {
-    pidB.Setpoint(setpointB);
-    setpointB_buffer = inputRight;
-  }
 }
 
-void LeftPidControllerCompute() {
-  // run pid updates at the same rate as
-  // data updates
-  if (!imu_updated) return;
+double pwm_slew_limiter(double previous_pwm, double target_pwm) {
+  // apply slew rate limits
+  double dpwm = target_pwm - previous_pwm;
+  if (dpwm > MAX_SLEW_PWM) dpwm = MAX_SLEW_PWM;
+  else if (dpwm < -MAX_SLEW_PWM) dpwm = -MAX_SLEW_PWM;
 
-  if (!usePIDCompute) {
-    return;
-  }
+  double new_pwm = previous_pwm + dpwm;
 
-  outputA = pidA.Run(speedGetA);
-  if (abs(outputA)<THRESHOLD_PWM) {
-    outputA = 0;
-  }
-  if (setpointA == 0 && speedGetA == 0) {
-    outputA = 0;
-  }
+  // further limit sudden changes in motor direction by
+  // injecting a zero step
+  if (new_pwm * previous_pwm < 0.0) new_pwm = 0.0;
 
-  // enforce max slew rate
-  if (outputA > last_pwm_left + MAX_SLEW_PWM) {
-    outputA = last_pwm_left + MAX_SLEW_PWM;
-  } else if (outputA < last_pwm_left - MAX_SLEW_PWM) {
-    outputA = last_pwm_left - MAX_SLEW_PWM;
-  }
-
-  // prevent rapid switching of control direction
-  if (outputA * last_pwm_left < 0.0)
-  {
-    outputA = 0;
-  }
-
-  last_pwm_left = outputA;
-
-  leftCtrl(outputA);
+  return new_pwm;
 }
 
-void RightPidControllerCompute() {
-  // run pid updates at the same rate as
-  // data updates
-  if (!imu_updated) return;
+double pwm_clamp(double pwm) {
+  // apply pwm absolute limits
+  if (abs(pwm) < THRESHOLD_PWM) pwm = 0.0;
+  else if (pwm > MAX_PWM) pwm = MAX_PWM;
+  else if (pwm < -MAX_PWM) pwm = -MAX_PWM;
 
-  if (!usePIDCompute) {
-    return;
-  }
-
-  outputB = pidB.Run(speedGetB);
-  if (abs(outputB)<THRESHOLD_PWM) {
-    outputB = 0;
-  }
-  if (setpointB == 0 && speedGetB == 0) {
-    outputB = 0;
-  }
-
-  // enforce max slew rate
-  if (outputB > last_pwm_right + MAX_SLEW_PWM) {
-    outputB = last_pwm_right + MAX_SLEW_PWM;
-  } else if (outputB < last_pwm_right - MAX_SLEW_PWM) {
-    outputB = last_pwm_right - MAX_SLEW_PWM;
-  }
-
-  // prevent rapid switching of control direction
-  if (outputB * last_pwm_right  < 0.0)
-  {
-    outputB = 0;
-  }
-
-  last_pwm_right = outputB;
-
-  rightCtrl(outputB);
+  return pwm;
 }
+
+double pwm_feedforward(double setpoint) {
+  double sign_setpoint = (setpoint > 0.0f) - (setpoint < 0.0f);
+  double pwm = k_ff * setpoint + int_ff * sign_setpoint;
+  return pwm;
+}
+
+double controller(double setpoint, double currentSpeed, double dt, motorControllerState& motorState) {
+  // slew and clamp limited feed-forward/pid controller.
+  // note this controller updates last_pwm and integral.
+  //control error
+  double error = setpoint - currentSpeed;
+
+  // feedforward
+  double pwm_ff = pwm_feedforward(setpoint);
+
+  // pre-limit control
+  double pwm_pid = __kp * error + motorState.integral;
+  double pwm_target = pwm_ff + pwm_pid;
+
+  // clamp
+  pwm_target = pwm_clamp(pwm_target);
+
+  // slew limit
+  double pwm = pwm_slew_limiter(motorState.lastPwm, pwm_target);
+
+  // anti-windup
+  bool limiter_active = (fabs(pwm - pwm_target) > 1e-3);
+
+  // some GPT ideas that seem unnecessary
+  //bool pushing_further_positive = (pwm_target > pwm) && (error > 0.0);
+  //bool pushing_further_negative = (pwm_target < pwm) && (error < 0.0);
+  //bool block_integration = limiter_active && 
+  //    (pushing_further_positive || pushing_further_negative);
+
+  if (!limiter_active) {
+    motorState.integral += __ki * error * dt;
+  }
+
+  // integral term limits
+  if (motorState.integral > MAX_PWM) motorState.integral = MAX_PWM;
+  if (motorState.integral < -MAX_PWM) motorState.integral = -MAX_PWM;
+
+  // update pwm memory
+  motorState.lastPwm = pwm;
+
+  return pwm;
+}
+
 
 void setPID(float inputP, float inputI, float inputD, float inputLimits) {
   __kp = inputP;
   __ki = inputI;
   __kd = inputD;
   windup_limits = inputLimits;
-  pidA.SetTunings(__kp, __ki, __kd);
-  pidB.SetTunings(__kp, __ki, __kd);
+  // pidA.SetTunings(__kp, __ki, __kd);
+  // pidB.SetTunings(__kp, __ki, __kd);
+}
+
+void setFF(float inputK, float inputI) {
+  k_ff = inputK;
+  int_ff = inputI;
 }
 
 void rosCtrl(float rosX, float rosZ) {
