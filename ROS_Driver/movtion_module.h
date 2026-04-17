@@ -315,6 +315,111 @@ double controller(double setpoint, double currentSpeed, double dt, motorControll
   return pwm;
 }
 
+void dual_controller(
+  double setpointLeft,
+  double setpointRight,
+  double currentSpeedLeft,
+  double currentSpeedRight,
+  double dt, 
+  motorControllerState& motorStateLeft,
+  motorControllerState& motorStateRight,
+  motorControllerState& motorStateAvg,
+  motorControllerState& motorStateDiff
+  ) {
+  // slew and clamp limited feed-forward/pid controller assuming left and right motor drives
+  // are coupled through their interaction with the driving surface (data indicates this).
+  // This controller goes back and forth between L/R and vavg, vdiff spaces.
+  //control error
+  double setpointAvg = (setpointLeft + setpointRight) / 2.0;
+  double setpointDiff = (setpointRight - setpointLeft) / 2.0;
+  double currentSpeedAvg = (currentSpeedLeft + currentSpeedRight) / 2.0;
+  double currentSpeedDiff = (currentSpeedRight - currentSpeedLeft) / 2.0;
+
+  const double sp_eps = 1e-2;
+  const double speed_eps = 1e-2;
+  // kill unwanted integral windup
+  if (fabs(setpointAvg) < sp_eps &&
+      fabs(setpointDiff) < sp_eps &&
+      fabs(currentSpeedAvg) < speed_eps &&
+      fabs(currentSpeedDiff) < speed_eps) {
+    motorStateAvg.integral = 0.0;
+    motorStateDiff.integral = 0.0;
+  }
+  //kill integral windups on sign change
+  if (motorStateDiff.setpoint * setpointDiff < 0.0)
+  {
+    motorStateDiff.integral = 0.0;
+  }
+  if (motorStateAvg.setpoint * setpointAvg < 0.0)
+  {
+    motorStateAvg.integral = 0.0;
+  }
+
+  motorStateDiff.setpoint = setpointDiff;
+  motorStateAvg.setpoint = setpointAvg;
+
+
+  double errorAvg = setpointAvg - currentSpeedAvg;
+  double errorDiff = setpointDiff - currentSpeedDiff;
+
+  // feedforward
+  double pwm_ff_avg = pwm_feedforward(setpointAvg);
+  double pwm_ff_diff = pwm_feedforward(setpointDiff);
+
+  // pre-limit control
+  double pwm_pid_avg = __kp * errorAvg + motorStateAvg.integral;
+  double pwm_target_avg = pwm_ff_avg + pwm_pid_avg;
+  double pwm_pid_diff = __kp * errorDiff + motorStateDiff.integral;
+  double pwm_target_diff = pwm_ff_diff + pwm_pid_diff;
+
+  // back to L/R for limiting
+  double pwm_target_left = pwm_target_avg - pwm_target_diff;
+  double pwm_target_right = pwm_target_avg + pwm_target_diff;
+
+  // clamp
+  pwm_target_left = pwm_clamp(pwm_target_left);
+  pwm_target_right = pwm_clamp(pwm_target_right);
+
+  // slew limit
+  double pwm_left = pwm_slew_limiter(motorStateLeft.lastPwm, pwm_target_left);
+  double pwm_right = pwm_slew_limiter(motorStateRight.lastPwm, pwm_target_right);
+
+  double pwm_avg = (pwm_left + pwm_right) / 2.0;
+  double pwm_diff = (pwm_right - pwm_left) / 2.0;
+
+  // anti-windup
+  bool limiter_active_avg = (fabs(pwm_avg - pwm_target_avg) > 1e-3);
+  bool limiter_active_diff = (fabs(pwm_diff - pwm_target_diff) > 1e-3);
+
+  if (!limiter_active_avg) {
+    motorStateAvg.integral += __ki * errorAvg * dt;
+  }
+
+  if (!limiter_active_diff) {
+    motorStateDiff.integral += __ki * errorDiff * dt;
+  }
+
+  // integral term limits
+  if (motorStateAvg.integral > MAX_PWM) motorStateAvg.integral = MAX_PWM;
+  if (motorStateAvg.integral < -MAX_PWM) motorStateAvg.integral = -MAX_PWM;
+  if (motorStateDiff.integral > MAX_PWM) motorStateDiff.integral = MAX_PWM;
+  if (motorStateDiff.integral < -MAX_PWM) motorStateDiff.integral = -MAX_PWM;
+
+  // update pwm memory
+  // first two are settings for the motors
+  motorStateLeft.pwm = pwm_left;
+  motorStateRight.pwm = pwm_right;
+  // yes, this is a little silly
+  motorStateLeft.lastPwm = pwm_left;
+  motorStateRight.lastPwm = pwm_right;
+  // include avg and diff just for completeness
+  motorStateAvg.pwm = pwm_avg;
+  motorStateDiff.pwm = pwm_diff;
+  // yes, this is a little silly
+  motorStateAvg.lastPwm = pwm_avg;
+  motorStateDiff.lastPwm = pwm_diff;
+}
+
 
 void setPID(float inputP, float inputI, float inputD, float inputLimits) {
   __kp = inputP;

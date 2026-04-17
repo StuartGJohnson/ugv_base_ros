@@ -415,7 +415,7 @@ void loop() {
   {
     // dt will be garbage on the first call (see first pass exit below)
     double dt = getEncoders(encoderLeft, encoderRight);
-    //double dt = getEncodersSim(pwm_left, pwm_right, encoderLeft, encoderRight);
+    //double dt = getEncodersSim(motorsLeft.pwm, motorsRight.pwm, encoderLeft, encoderRight);
     if (first_pass)
     {
       // roll encoders and exit
@@ -427,12 +427,14 @@ void loop() {
       getSpeed(dt, encoderLeft);
       // right speed measurement
       getSpeed(dt, encoderRight);
-      // compute pwm updates
-      pwm_left = controller(setpointA, encoderLeft.speed, dt, motorsLeft);
-      pwm_right = controller(setpointB, encoderRight.speed, dt, motorsRight);
+      // compute pwm updates (etc)
+      dual_controller(setpointA, setpointB,
+                      encoderLeft.speed, encoderRight.speed, dt,
+                      motorsLeft, motorsRight,
+                      motorsAvg, motorsDiff);
       // apply updates to the motors
-      motorCtrl(pwm_left, AIN1, AIN2, PWMA);
-      motorCtrl(pwm_right, BIN1, BIN2, PWMB);
+      motorCtrl(motorsLeft.pwm, AIN1, AIN2, PWMA);
+      motorCtrl(motorsRight.pwm, BIN1, BIN2, PWMB);
     }
 
   }

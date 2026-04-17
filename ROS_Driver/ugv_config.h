@@ -314,8 +314,8 @@ String jsonFeedbackWeb = "";
 
 //  --- --- --- pid/feed-forward controller --- --- ---
 
-float __kp = 50.0;
-float __ki = 300.0;
+float __kp = 40.0;
+float __ki = 250.0;
 float __kd = 0.0;
 float windup_limits = 255;
 
@@ -348,6 +348,8 @@ struct motorControllerState {
 
 motorControllerState motorsLeft{0, 0, 0, 0};
 motorControllerState motorsRight{0, 0, 0, 0};
+motorControllerState motorsAvg{0, 0, 0, 0};
+motorControllerState motorsDiff{0, 0, 0, 0};
 
 //  --- --- --- ugv base --- --- ---
 
