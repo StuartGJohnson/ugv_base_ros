@@ -6,10 +6,10 @@ void jsonCmdReceiveHandler(){
 												emergencyStopProcessing();
   											setGoalSpeed(0, 0);
 												break;
-	case CMD_TIME_SYNC:
-												lastTimeSyncTime = millis();
-												timeSynced = true;
-												break;
+	// case CMD_TIME_SYNC:
+	// 											lastTimeSyncTime = millis();
+	// 											timeSynced = true;
+	// 											break;
 	case CMD_SPEED_CTRL:	if (jsonCmdReceive.containsKey("T") &&
 														jsonCmdReceive.containsKey("L") &&
 														jsonCmdReceive.containsKey("R")){
@@ -68,8 +68,8 @@ void jsonCmdReceiveHandler(){
                         jsonCmdReceive["cx"],
 												jsonCmdReceive["cy"],
 												jsonCmdReceive["cz"]);break;
-	case CMD_BASE_FEEDBACK:
-												baseInfoFeedback(encoderLeft, encoderRight, motorsLeft, motorsRight);break;
+  //case CMD_BASE_FEEDBACK:
+	//											baseInfoFeedback(encoderLeft, encoderRight, motorsLeft, motorsRight);break;
 	case CMD_BASE_FEEDBACK_FLOW:
 												setBaseInfoFeedbackMode(
 												jsonCmdReceive["cmd"]);break;

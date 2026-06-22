@@ -51,8 +51,8 @@ void oled_update() {
 }
 
 // dev info update on oled.
-void oledInfoUpdate(encoderState encoderStateLeft,
-	encoderState encoderStateRight,
+void oledInfoUpdate(encoderState& encoderStateLeft,
+	encoderState& encoderStateRight,
 	const motorControllerState motorStateLeft,
 	const motorControllerState motorStateRight) {
   currentTimeMillis = millis();
@@ -94,16 +94,22 @@ void oledInfoUpdate(encoderState encoderStateLeft,
   if (!screenDefaultMode) {
     return;
   }
-  //screenLine_0 = "l:" + String(odom_l_rate) + " r:" + String(odom_r_rate);
-  //screenLine_1 = "a:" + String(a_rate) + " g:" + String(g_rate);
+  // new timing validation
+  // dt needs good stats - or we might burn out a driver board!
+  //screenLine_0 = "dt_min:" + String(dt_min, 6);
+  //screenLine_1 = "dt_max:" + String(dt_max, 6);
+  // give running stats in each 5 second window
+  dt_reset= true;
+  screenLine_0 = "l:" + String(odom_l_rate) + " r:" + String(odom_r_rate);
+  screenLine_1 = "a:" + String(a_rate) + " g:" + String(g_rate);
   // data/update rate and display rate
-  screenLine_0 = "dr:" + String(g_rate) + " dt:" + String(dt_s);
+  //screenLine_0 = "dr:" + String(g_rate) + " dt:" + String(dt_s);
   // max left and right PWM commands over the last interval
-  screenLine_1 = "lp:" + String(reported_max_command_left) + " rp:" + String(reported_max_command_right);
+  //screenLine_1 = "lp:" + String(reported_max_command_left) + " rp:" + String(reported_max_command_right);
   //screenLine_2 = "m:" + String(m_rate) + "dt:" + String(dt_s);
-  //screenLine_2 = "kp:" + String(int(round(__kp))) + "kd:" + String(int(round(__kd))) + "ki:" + String(int(round(__ki)));
+  screenLine_2 = "kp:" + String(int(round(__kp))) + " kd:" + String(int(round(__kd))) + " ki:" + String(int(round(__ki)));
   // left and right encoder
-  screenLine_2 = "le:" + String(encoderStateLeft.en_odom) + " re:" + String(encoderStateRight.en_odom);
+  //screenLine_2 = "le:" + String(encoderStateLeft.en_odom) + " re:" + String(encoderStateRight.en_odom);
   //screenLine_2 = "w:" + String(WHEEL_D) + " o:" + String(ONE_CIRCLE_PLUSES);
   //screenLine_3 = "uc:" + String(update_count) + "dt:" + String(dt_s);
   screenLine_3= "VL:" + String(loadVoltage_V) + " s " + String(mainType) + String(moduleType);

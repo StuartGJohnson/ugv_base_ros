@@ -322,22 +322,33 @@ float windup_limits = 255;
 float k_ff = 175.0;
 float int_ff = 10.0;
 
+// the monotonic time of the last
+// return from the imu data load
+int64_t lastLoopTime;
+
 bool first_pass = true;
-unsigned long lastEncoderTime;
+bool dt_reset = true;
+
 double pwm_left;
 double pwm_right;
+double dt_min = -1.0;
+double dt_max = -1.0;
+double dt_target = 1.0/28;
+double dt_target_hi = dt_target + dt_target/10.0;
+double dt_target_lo = dt_target - dt_target/10.0;
 
 struct encoderState {
   double speed;
   long encoder;
   long lastEncoder;
-  unsigned long lastEncoderTime;
+  //unsigned long lastEncoderTime;
+  //int64_t lastEncoderTime;
   unsigned long odom_updates;
   long int en_odom;
 };
 
-encoderState encoderLeft{0.0, 0, 0, 0, 0, 0};
-encoderState encoderRight{0.0, 0, 0, 0, 0, 0};
+encoderState encoderLeft{0.0, 0, 0, 0, 0};
+encoderState encoderRight{0.0, 0, 0, 0, 0};
 
 struct motorControllerState {
   double pwm;
@@ -405,17 +416,12 @@ bool uartCmdEcho = 0;
 int HEART_BEAT_DELAY = 3000;
 unsigned long lastCmdRecvTime = millis();
 
-// time sync data
-unsigned long lastTimeSyncTime = 0;
-// note the ROS2 node driving the robot MUST
-// send a time sync before it begins motion
-// operations
-bool timeSynced = false;
-
-// we are still going to assign a timestamp based
-// on the average of (MCU) update times
-unsigned long lastFeedbackTime;
-bool lastFeedbackTimeValid = false;
+// // time sync data
+// unsigned long lastTimeSyncTime = 0;
+// // note the ROS2 node driving the robot MUST
+// // send a time sync before it begins motion
+// // operations
+// bool timeSynced = false;
 
 // --- --- --- ugv imu --- --- ---
 double icm_pitch = 0;
@@ -444,8 +450,6 @@ float m_rate;
 float odom_l_rate;
 float odom_r_rate;
 float update_rate;
-
-unsigned long imu_last_time = micros();
 
 int sample_count = 240;
 

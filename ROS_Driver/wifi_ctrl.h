@@ -20,7 +20,8 @@ byte WIFI_MODE_ON_BOOT = 1;
 const char* sta_ssid = "none";
 const char* sta_password = "none";
 const char* ap_ssid = "UGV";
-const char* ap_password = "12345678";
+const char* ap_password = "12345678";\
+const char* sntp_server = "none";
 
 // true: change the WIFI_MODE_ON_BOOT to 3 when first STA mode succeed.
 bool defaultModeToAPSTA = true;
@@ -57,6 +58,8 @@ void updateOledWifiInfo() {
   case 2:
     screenLine_0 = "AP: OFF";
     screenLine_1 = String("ST:") + localIP.toString();
+		screenLine_2 = String("RSSI:") + WiFi.RSSI();
+		screenLine_3 = String("SNTP:") + sntp_server;
     break;
   case 3:
     screenLine_0 = String("AP:") + ap_ssid;
@@ -85,6 +88,7 @@ bool loadWifiConfig() {
 		sta_password = wifiDoc["sta_password"];
 		ap_ssid = wifiDoc["ap_ssid"];
 		ap_password = wifiDoc["ap_password"];
+		sntp_server = wifiDoc["sntp_server"];
 
 		if (InfoPrint == 1) {
 			Serial.println(line);
@@ -108,6 +112,9 @@ bool loadWifiConfig() {
 	}
 }
 
+const char* getWifiSntpServer() {
+	return sntp_server;
+}
 
 // get the ip address.
 IPAddress getIPAddress(byte inputMode) {

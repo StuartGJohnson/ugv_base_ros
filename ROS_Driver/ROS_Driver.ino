@@ -8,6 +8,9 @@ StaticJsonDocument<1024> jsonInfoHttp;
 #include <esp_system.h>
 #include <LittleFS.h>
 #include <WiFi.h>
+#include <time.h>
+#include <esp_sntp.h>
+#include <esp_timer.h>
 #include <WebServer.h>
 #include <esp_now.h>
 #include <nvs_flash.h>
@@ -63,6 +66,9 @@ StaticJsonDocument<1024> jsonInfoHttp;
 
 // functions for http & web server.
 //#include "http_server.h"
+
+// sntp time provider
+#include "wifi_sntp.h"
 
 
 void moduleType_RoArmM2() {
@@ -277,6 +283,9 @@ void setup() {
   if(InfoPrint == 1){Serial.println("IMU Calibrating");}
   imuCalibration();
 
+  // init the sntp time
+  setup_sntp_time(getWifiSntpServer());
+
   screenLine_3 = "UGV started";
   oled_update();
   if(InfoPrint == 1){Serial.println("UGV started.");}
@@ -294,9 +303,16 @@ void setup() {
 
   led_pwm_ctrl(0, 0);
 
+  //updateOledMotionInfo();
+  updateOledTimingInfo();
+
   if(InfoPrint == 1){Serial.println("Application initialization settings.");}
   //createMission("boot", "these cmds run automatically at boot.");
   //missionPlay("boot", 1);
+  myICM.resetFIFO();
+
+  lastLoopTime = mono_time_us();
+
 }
 
 
@@ -380,6 +396,7 @@ void loop() {
         gy = myICM.agmt.gyr.axes.y;
         gz = myICM.agmt.gyr.axes.z;
         g_updates++;
+        imu_updated = true;
 
         // Magnetometer: only valid if mag is initialized and enabled
         // mx = myICM.agmt.mag.axes.x;
@@ -413,39 +430,69 @@ void loop() {
 
   if (imu_updated)
   {
-    // dt will be garbage on the first call (see first pass exit below)
-    double dt = getEncoders(encoderLeft, encoderRight);
-    //double dt = getEncodersSim(motorsLeft.pwm, motorsRight.pwm, encoderLeft, encoderRight);
+    int64_t currentTime = mono_time_us();
+    int64_t timestampTime = sntp_time_us();
+
+    // timing will be garbage-y on the first call (see first pass exit below)
+    int64_t dt_us = currentTime - lastLoopTime;
+    int64_t timestamp_us = timestampTime - dt_us / 2;
+    double dt = dt_us * 1.0e-6;
+
+    getEncoders(encoderLeft, encoderRight);
+    //getEncodersSim(motorsLeft.pwm, motorsRight.pwm, encoderLeft, encoderRight, dt);
     if (first_pass)
     {
-      // roll encoders and exit
+      // roll encoders and monotonic time and exit
       encoderLeft.lastEncoder = encoderLeft.encoder;
       encoderRight.lastEncoder = encoderRight.encoder;
+      lastLoopTime = currentTime;
       first_pass = false;
     } else {
-      // left speed measurement
-      getSpeed(dt, encoderLeft);
-      // right speed measurement
-      getSpeed(dt, encoderRight);
-      // compute pwm updates (etc)
-      dual_controller(setpointA, setpointB,
-                      encoderLeft.speed, encoderRight.speed, dt,
-                      motorsLeft, motorsRight,
-                      motorsAvg, motorsDiff);
-      // apply updates to the motors
-      motorCtrl(motorsLeft.pwm, AIN1, AIN2, PWMA);
-      motorCtrl(motorsRight.pwm, BIN1, BIN2, PWMB);
+
+      // wait for steady state operation (initial DMP FIFO drain complete)
+      if (dt < dt_target_hi && dt > dt_target_lo )
+      {
+
+        if (dt_reset) {
+          dt_min = dt;
+          dt_max = dt;
+          dt_reset = false;
+        }
+
+        // collect some dt stats
+        if (dt < dt_min){
+          dt_min = dt;
+        }
+        if (dt > dt_max){
+          dt_max = dt;
+        }
+
+        // left speed measurement
+        getSpeed(dt, encoderLeft);
+        // right speed measurement
+        getSpeed(dt, encoderRight);
+        // compute pwm updates (etc)
+        dual_controller(setpointA, setpointB,
+                        encoderLeft.speed, encoderRight.speed, dt,
+                        motorsLeft, motorsRight,
+                        motorsAvg, motorsDiff);
+        // apply updates to the motors
+        motorCtrl(motorsLeft.pwm, AIN1, AIN2, PWMA);
+        motorCtrl(motorsRight.pwm, BIN1, BIN2, PWMB);
+
+        //updateOledTimingInfoShort();
+        //updateOledWifiInfo();
+        oledInfoUpdate(encoderLeft, encoderRight, motorsLeft, motorsRight);
+        if (baseFeedbackFlow) {
+          baseInfoFeedback(encoderLeft, encoderRight, motorsLeft, motorsRight, timestamp_us);
+        }
+        lastLoopTime = currentTime;
+
+        // stop moving if commands have ceased arriving in a timely fashion
+        heartBeatCtrl();
+      }
     }
-
   }
-  
-  oledInfoUpdate(encoderLeft, encoderRight, motorsLeft, motorsRight);
-
-  if (baseFeedbackFlow) {
-    baseInfoFeedback(encoderLeft, encoderRight, motorsLeft, motorsRight);
-  }
-
-  heartBeatCtrl();
 
   // reset the sync flag
   imu_updated = false;

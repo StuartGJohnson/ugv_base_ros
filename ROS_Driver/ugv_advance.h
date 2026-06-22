@@ -376,49 +376,14 @@ void baseInfoFeedback(
 	const encoderState encoderStateLeft,
 	const encoderState encoderStateRight,
 	const motorControllerState motorStateLeft,
-	const motorControllerState motorStateRight
+	const motorControllerState motorStateRight,
+	const int64_t timestamp_us
 	) {
-	static unsigned long feedback_time;
-	unsigned long current_time;
-	// synchronize with the imu update
-	if (!imu_updated) return;
-
-	// I will assume that the remote manager knows whether or
-	// not it wants to use the timestamps in the telemetry or
-	// not - in other words whether or not it is sending time
-	// sync signals.
-	//if (!timeSynced) return;
-
-	// if (millis() - last_feedback_time < feedbackFlowExtraDelay) {
-	// 	return;
-	// }
-	
-	feedback_time = millis();
-
-	// let's timestamp this feedback with the midpoint of
-	// the last 2 time stamps.
-
-	if (lastFeedbackTimeValid)
-	{
-		unsigned long delta_feedback = feedback_time - lastFeedbackTime;
-		// offset current feedback time by 1/2 the delta
-		current_time = lastFeedbackTime + delta_feedback / 2;
-		lastFeedbackTime = feedback_time;
-	}
-	else
-	{ 
-		// just record feedback time and get out of here
-		lastFeedbackTime = feedback_time;
-		lastFeedbackTimeValid = true;
-		return;
-	}
-
-	double currentTimeSec =  (double)(current_time - lastTimeSyncTime) / 1000.0;
 
 	jsonInfoHttp.clear();
 	jsonInfoHttp["T"] = FEEDBACK_BASE_INFO;
 
-	jsonInfoHttp["tsec"] = currentTimeSec;
+	jsonInfoHttp["tus"] = timestamp_us;
 
 	jsonInfoHttp["L"] = encoderStateLeft.speed;
 	jsonInfoHttp["R"] = encoderStateRight.speed;

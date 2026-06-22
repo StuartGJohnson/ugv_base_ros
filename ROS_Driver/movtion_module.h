@@ -1,3 +1,6 @@
+// forward declaration
+int64_t mono_time_us();
+
 // switch parts
 int switch_pwm_A = 0;
 int switch_pwm_B = 0;
@@ -134,6 +137,15 @@ double speedGetB;
 
 double pulsesRate = 3.14159265359 * WHEEL_D / ONE_CIRCLE_PLUSES;
 
+// update oled with basic data types; for discovery/dev
+void updateOledMotionInfo() {
+  screenLine_0 = String("ENC:") + String(sizeof(encoderA.getCount()));
+  // these are both 4 in my tests
+	screenLine_1 = String("micros:") + String(sizeof(micros()));
+  screenLine_2 = String("millis:") + String(sizeof(millis()));
+	screenLine_3 = String("esp:") + String(sizeof(esp_timer_get_time()));
+  oled_update();
+}
 
 void initEncoders() {
   encoderA.attachHalfQuad(AENCA, AENCB);
@@ -142,29 +154,25 @@ void initEncoders() {
   encoderB.setCount(0);
 }
 
-double getEncoders(encoderState& encLeft, encoderState& encRight) {
-  unsigned long currentTime = micros();
+void getEncoders(encoderState& encLeft, encoderState& encRight) {
+  //int64_t currentTime = mono_time_us();
+  //unsigned long currentTime = micros();
   // I am assuming these don't take very long
   encLeft.encoder = encoderA.getCount();
   encRight.encoder = encoderB.getCount();
-  double dt = (double)(currentTime - encLeft.lastEncoderTime) / 1000000;
-  encLeft.lastEncoderTime = currentTime;
-  encRight.lastEncoderTime = currentTime;
-  return dt;
+  //double dt = (currentTime - encLeft.lastEncoderTime) * 1.0e-6;
+  //encLeft.lastEncoderTime = currentTime;
+  //encRight.lastEncoderTime = currentTime;
+  //return dt;
 }
 
-double getEncodersSim(double pwm_left, double pwm_right, encoderState& encLeft, encoderState& encRight) {
-  unsigned long currentTime = micros();
+void getEncodersSim(double pwm_left, double pwm_right, encoderState& encLeft, encoderState& encRight, double dt) {
   double sign_left = (pwm_left > 0.0f) - (pwm_left < 0.0f);
   double sign_right = (pwm_right > 0.0f) - (pwm_right < 0.0f);
   double speed_left = sign_left * (fabs(pwm_left) - int_ff)/k_ff;
   double speed_right = sign_right * (fabs(pwm_right) - int_ff)/k_ff;
-  double dt = (double)(currentTime - encLeft.lastEncoderTime) / 1000000;
   encLeft.encoder = speed_left * dt / pulsesRate + encLeft.lastEncoder;
   encRight.encoder = speed_right * dt / pulsesRate + encRight.lastEncoder;
-  encLeft.lastEncoderTime = currentTime;
-  encRight.lastEncoderTime = currentTime;
-  return dt;
 }
 
 void getSpeed(
