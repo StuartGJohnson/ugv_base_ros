@@ -1,3 +1,9 @@
+/*
+ * Modified by Stuart Johnson on 2026-04-13, 2026-04-16, and 2026-06-22.
+ * Added DMP, telemetry timing, feed-forward/PI motor-control, slew-rate,
+ * encoder-state, and coupled-controller configuration.
+ */
+
 // the uart used to control servos.
 // GPIO 18 - S_RXD, GPIO 19 - S_TXD, as default.
 #define RoArmM2_Servo_RXD 18

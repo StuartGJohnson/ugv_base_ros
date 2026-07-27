@@ -1,3 +1,8 @@
+/*
+ * Modified by Stuart Johnson on 2026-04-13, 2026-04-16, and 2026-06-22.
+ * Updated UART handling for revised timing and motor-controller commands.
+ */
+
 void jsonCmdReceiveHandler(){
 	int cmdType = jsonCmdReceive["T"].as<int>();
 	switch(cmdType){

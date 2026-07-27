@@ -1,3 +1,9 @@
+/*
+ * Modified by Stuart Johnson on 2026-04-13, 2026-04-16, and 2026-06-22.
+ * Reworked encoder updates and motor control with slew limiting,
+ * feed-forward/PI control, coupled wheel control, and monotonic timing.
+ */
+
 // forward declaration
 int64_t mono_time_us();
 

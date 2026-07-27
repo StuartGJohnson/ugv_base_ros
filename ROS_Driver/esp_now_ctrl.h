@@ -1,3 +1,8 @@
+/*
+ * Modified by Stuart Johnson on 2026-04-13.
+ * Updated ESP-NOW initialization, peer handling, and error reporting.
+ */
+
 const int MAX_FOLLOWERS = 10;  // Maximum number of follower devices
 
 typedef struct struct_message {

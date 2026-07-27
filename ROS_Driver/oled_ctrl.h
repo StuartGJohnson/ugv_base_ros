@@ -1,3 +1,8 @@
+/*
+ * Modified by Stuart Johnson on 2026-04-13, 2026-04-16, and 2026-06-22.
+ * Revised OLED diagnostics for IMU, motor-controller, and timing status.
+ */
+
 // <<<<<<<<<<=== === ===SSD1306: 0x3C=== === ===>>>>>>>>>>
 // 0.91inch OLED
 bool screenDefaultMode = true;

@@ -9,6 +9,20 @@ This is a lower computer example for the [Waveshare](https://www.waveshare.com/)
 
 ![](./README_footage/UGV-Rover-details-23.jpg)
 
+## About This Updated Version
+
+This repository is an independently maintained, updated version of the
+[Waveshare `ugv_base_ros` repository](https://github.com/waveshareteam/ugv_base_ros).
+It is based on upstream commit
+[`c967326`](https://github.com/waveshareteam/ugv_base_ros/commit/c967326f7f9e52b0229a7573a70ea6ba77c4411e)
+and is not a GitHub fork.
+
+The updates by Stuart Johnson add DMP-based IMU processing and synchronized
+telemetry, revised OLED diagnostics, feed-forward/PI motor control with slew
+limiting, coupled left/right motor control, revised timing, and Wi-Fi SNTP time
+synchronization. The original Waveshare copyright and GPLv3-or-later licensing
+are preserved.
+
 ## Basic Description
 The Waveshare UGV robots utilize both an upper computer and a lower computer. This repository contains the program running on the lower computer, which is typically a ESP32 on **ROS Driver for Robots**.  
 

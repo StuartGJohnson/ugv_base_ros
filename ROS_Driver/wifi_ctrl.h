@@ -1,3 +1,8 @@
+/*
+ * Modified by Stuart Johnson on 2026-06-22.
+ * Added SNTP server configuration and related Wi-Fi status reporting.
+ */
+
 // wifi ctrl functions.
 // you can refer to this website below to upload a config file to ESP32 Flash.
 // https://randomnerdtutorials.com/install-esp32-filesystem-uploader-arduino-ide/

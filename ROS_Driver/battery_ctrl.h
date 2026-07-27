@@ -1,3 +1,8 @@
+/*
+ * Modified by Stuart Johnson on 2026-04-13.
+ * Updated INA219 ADC and programmable-gain configuration.
+ */
+
 #define INA219_ADDRESS 0x42
 INA219_WE ina219 = INA219_WE(INA219_ADDRESS);
 

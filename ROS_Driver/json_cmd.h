@@ -1,3 +1,8 @@
+/*
+ * Modified by Stuart Johnson on 2026-04-13 and 2026-04-16.
+ * Added time, motor feed-forward, and controller command definitions.
+ */
+
 // ---===< Feedback Info >===---
 // base info feedback.
 // {"T":1001,"L":0,"R":0,"gx":0,"gy":0,"gz":0,"ax":0,"ay":0,"az":0,"mx":0,"my":0,"mz":0,"odl":0,"odr":0,"v":11.0}

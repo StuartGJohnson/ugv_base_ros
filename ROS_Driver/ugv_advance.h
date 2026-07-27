@@ -1,3 +1,8 @@
+/*
+ * Modified by Stuart Johnson on 2026-04-13, 2026-04-16, and 2026-06-22.
+ * Updated feedback telemetry and removed the earlier manual time-sync path.
+ */
+
 // advance funcs for RoArm-M2 ctrl
 // place holder.
 void jsonCmdReceiveHandler();

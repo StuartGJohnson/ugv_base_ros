@@ -1,3 +1,9 @@
+/*
+ * Modified by Stuart Johnson on 2026-04-13, 2026-04-16, and 2026-06-22.
+ * Changes include DMP-based IMU and synchronized telemetry processing,
+ * revised motor control, diagnostics, and SNTP time synchronization.
+ */
+
 #include <ArduinoJson.h>
 StaticJsonDocument<256> jsonCmdReceive;
 StaticJsonDocument<256> jsonInfoSend;
