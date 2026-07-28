@@ -40,6 +40,9 @@ Install libraries with **`Library Manager`**: ArduinoJson, Adafruit_SSD1306, Ada
 
 See also ```ROS_Driver/sketch.yaml``` for a manifest of specific library versions. This can be installed via the command line using the arduino-cli, e.g. (from within the ```ROS_Driver``` directory) ```arduino-cli compile --profile esp32 --verbose .```. However, the Arduino IDE builds and deploys were used in testing.
 
+### Upload ###
+Built firmware can be uploaded to the Waveshare ESP32 board via the Arduino IDE. Note that you will need to hold down the "boot" button on the board. The USB-C connector on the board can be used for FW upload.
+
 ### Basic Use
 You can send JSON command to robot via UART/USB@115200.
 
