@@ -1,15 +1,7 @@
-![GitHub top language](https://img.shields.io/github/languages/top/effectsmachine/ugv_base_ros) ![GitHub language count](https://img.shields.io/github/languages/count/effectsmachine/ugv_base_ros)
-![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/effectsmachine/ugv_base_ros)
-![GitHub repo size](https://img.shields.io/github/repo-size/effectsmachine/ugv_base_ros) ![GitHub](https://img.shields.io/github/license/effectsmachine/ugv_base_ros) ![GitHub last commit](https://img.shields.io/github/last-commit/effectsmachine/ugv_base_ros)
-
 # Waveshare UGV Robots
-This is a lower computer example for the [Waveshare](https://www.waveshare.com/) UGV robots with ROS Driver: **UGV Rover**, **UGV Beast**, **RaspRover**, **UGV02**\*.
+This is a lower computer example for the [Waveshare](https://www.waveshare.com/) UGV robots using the Arduino sketch in ```ROS_Driver```.
 
-\*The old version of UGV02 is driven by General Driver.
-
-![](./README_footage/UGV-Rover-details-23.jpg)
-
-## About This Updated Version
+## About This Updated Version (Modified by Stuart Johnson, April–July 2026.)
 
 This repository is an independently maintained, updated version of the
 [Waveshare `ugv_base_ros` repository](https://github.com/waveshareteam/ugv_base_ros).
@@ -44,9 +36,9 @@ You need to install **[Arduino IDE](https://www.arduino.cc/en/software)** and **
 ### Install libraries
 Copy `SCServo` folder into `C:\Users\[username]\AppData\Local\Arduino15\libraries\`
 
-Install libraries with **`Library Manager`**: ArduinoJson, LittleFS, Adafruit_SSD1306, INA219_WE, ESP32Encoder, PID_v2, SimpleKalmanFilter, Adafruit_ICM20X, Adafruit_ICM20948, Adafruit_Sensor
+Install libraries with **`Library Manager`**: ArduinoJson, Adafruit_SSD1306, Adafruit GFX, Adafruit BusIO, INA219_WE, ESP32Encoder, PID_v2, SimpleKalmanFilter,  SparkFun 9DoF IMU Breakout - ICM 20948 - Arduino Library.
 
-See also ```ROS_Driver/sketch.yaml``` for a manifest of specific library versions. This can be installed via the command line using the arduino-cli, e.g., ```arduino-cli compile --profile esp32 --verbose .```. However, the Arduino IDE builds and deploys were used in testing.
+See also ```ROS_Driver/sketch.yaml``` for a manifest of specific library versions. This can be installed via the command line using the arduino-cli, e.g. (from within the ```ROS_Driver``` directory) ```arduino-cli compile --profile esp32 --verbose .```. However, the Arduino IDE builds and deploys were used in testing.
 
 ### Basic Use
 You can send JSON command to robot via UART/USB@115200.
