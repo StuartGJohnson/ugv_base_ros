@@ -44,7 +44,7 @@ See also ```ROS_Driver/sketch.yaml``` for a manifest of specific library version
 Built firmware can be uploaded to the Waveshare ESP32 board via the Arduino IDE. Note that you will need to hold down the "boot" button on the board. The USB-C connector on the board can be used for FW upload.
 
 ### SNTP timing sync ###
-The FW uses SNTP to sync to a local SNTP server on the LAN (which could be the robot host). The settings for this are in the file ```ROS_Driver/Data/wifiConfig_example.json```. The file with the proper setting should be placed in ```ROS_Driver/Data/wifiConfig.json```. Generally speaking, other nodes on the LAN participating in the ROS2 nodes running the robot should be running some time synchronization scheme. This FW was tested with chrony NTP synchronization with a LAN clock master.
+The FW uses SNTP to sync to a local SNTP server on the LAN (which could be the robot host). Example settings for this are in the file ```ROS_Driver/Data/wifiConfig_example.json```. The file with the proper settings should be placed in ```ROS_Driver/Data/wifiConfig.json```. Generally speaking, other nodes on the LAN participating in the ROS2 nodes running the robot should be running some time synchronization scheme. This FW was tested with chrony NTP synchronization with a clock master on the LAN.
 
 ### Basic Use
 You can send JSON command to robot via UART/USB@115200.
