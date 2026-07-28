@@ -18,15 +18,12 @@ are preserved.
 ## Basic Description
 The Waveshare UGV robots utilize both an upper computer and a lower computer. This repository contains the program running on the lower computer, which is typically a ESP32 on **ROS Driver for Robots**.  
 
-The program running on the lower computer is either named [ugv_base_ros](https://github.com/effectsmachine/ugv_base_ros.git) or [ugv_base_general](https://github.com/effectsmachine/ugv_base_general.git) depending on the type of robot driver being used.  
-
 The upper computer communicates with the lower computer (the robot's driver based on ESP32) by sending JSON commands via USB UART. 
 
 ## Features
 - Closed-loop Speed Control with PID
 - IMU
 - OLED Screen
-- LED Lights(12V switches) Control
 - Control via JSON Commands
 - Telemetry via JSON
 
